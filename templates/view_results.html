@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Results - Automatic Answer Checker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h4 mb-0"><i class="fas fa-poll me-2"></i>Exam Results: {{ student_exam.exam.title }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h3 class="h5">Exam Information</h3>
+                    <table class="table table-sm">
+                        <tr>
+                            <th style="width: 30%;">Student:</th>
+                            <td>{{ student_exam.student.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date Taken:</th>
+                            <td>{{ student_exam.end_time.strftime('%b %d, %Y, %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Time Spent:</th>
+                            <td>{{ (student_exam.end_time - student_exam.start_time).total_seconds() // 60 }} minutes</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h3 class="h5 mb-3">Overall Score</h3>
+                            <div class="display-4 fw-bold mb-2 
+                                {% if student_exam.score >= 80 %}text-success
+                                {% elif student_exam.score >= 60 %}text-info
+                                {% elif student_exam.score >= 40 %}text-warning
+                                {% else %}text-danger{% endif %}">
+                                {{ "%.1f"|format(student_exam.score) }}%
+                            </div>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar 
+                                    {% if student_exam.score >= 80 %}bg-success
+                                    {% elif student_exam.score >= 60 %}bg-info
+                                    {% elif student_exam.score >= 40 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar"
+                                    style="width: {{ student_exam.score }}%"
+                                    aria-valuenow="{{ student_exam.score }}"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="h5 mb-3">Answers and Feedback</h3>
+            
+            {% for answer in answers %}
+                <div class="card mb-3 {% if answer.score == answer.question.points %}border-success{% elif answer.score > 0 %}border-warning{% else %}border-danger{% endif %}">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">Question {{ loop.index }}:</span>
+                            <div>
+                                <span class="badge bg-primary">{{ answer.question.points }} points possible</span>
+                                <span class="badge {% if answer.score == answer.question.points %}bg-success{% elif answer.score > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    Score: {{ "%.1f"|format(answer.score) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Question:</strong> {{ answer.question.question_text }}</p>
+                        
+                        {% if answer.question.question_type.value == 'multiple_choice' and answer.question.options %}
+                            <div class="mb-3">
+                                <p><strong>Your Answer:</strong> {{ answer.answer_text }}</p>
+                                <p><strong>Correct Answer:</strong> {{ answer.question.correct_answer }}</p>
+                            </div>
+                        {% else %}
+                            <div class="mb-3">
+                                <p><strong>Your Answer:</strong> {{ answer.answer_text }}</p>
+                                <p><strong>Expected Answer:</strong> {{ answer.question.correct_answer }}</p>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="alert {% if answer.score == answer.question.points %}alert-success{% elif answer.score > 0 %}alert-warning{% else %}alert-danger{% endif %}">
+                            <strong>Feedback:</strong> {{ answer.feedback }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <div class="mt-4">
+                {% if current_user.role.value == 'teacher' %}
+                    <a href="{{ url_for('view_exam', exam_id=student_exam.exam.id) }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Exam
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('dashboard_student') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

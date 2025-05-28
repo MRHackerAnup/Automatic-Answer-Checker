@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Question Analytics - Automatic Answer Checker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-6"><i class="fas fa-chart-bar me-2"></i>Question Analytics</h1>
+            <p class="text-muted">Performance analysis for this question</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('manage_questions') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Questions
+            </a>
+        </div>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0"><i class="fas fa-question-circle me-2"></i>Question Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h3 class="h6 text-muted">QUESTION TEXT</h3>
+                    <p class="lead">{{ question.question_text }}</p>
+                    
+                    <h3 class="h6 text-muted mt-4">TYPE</h3>
+                    <p>
+                        <span class="badge bg-{{ 'primary' if question.question_type.value == 'multiple_choice' else 'info' }}">
+                            {{ question.question_type.value|replace('_', ' ')|title }}
+                        </span>
+                    </p>
+                    
+                    {% if question.question_type.value == 'multiple_choice' and question.options %}
+                        <h3 class="h6 text-muted mt-4">OPTIONS</h3>
+                        <ul class="list-group">
+                            {% set options_list = question.options|tojson|fromjson %}
+                            {% if options_list is string %}
+                                {% set options_list = options_list|fromjson %}
+                            {% endif %}
+                            {% for option in options_list %}
+                                <li class="list-group-item {% if option == question.correct_answer %}list-group-item-success{% endif %}">
+                                    {{ option }}
+                                    {% if option == question.correct_answer %}
+                                        <span class="badge bg-success float-end">Correct</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <h3 class="h6 text-muted mt-4">CORRECT ANSWER</h3>
+                        <p>{{ question.correct_answer }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-info h-100">
+                        <div class="card-body">
+                            <h4 class="h5 card-title text-center mb-4">Quick Stats</h4>
+                            
+                            <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                                <span>Total Answers:</span>
+                                <span class="fw-bold">{{ total_answers }}</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                                <span>Average Score:</span>
+                                <span class="fw-bold 
+                                    {% if avg_score >= 0.8 * question.points %}text-success
+                                    {% elif avg_score >= 0.6 * question.points %}text-info
+                                    {% elif avg_score >= 0.4 * question.points %}text-warning
+                                    {% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(avg_score) }} / {{ question.points }}
+                                </span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                                <span>Difficulty:</span>
+                                <span class="fw-bold 
+                                    {% if avg_score >= 0.8 * question.points %}text-success
+                                    {% elif avg_score >= 0.6 * question.points %}text-info
+                                    {% elif avg_score >= 0.4 * question.points %}text-warning
+                                    {% else %}text-danger{% endif %}">
+                                    {% if avg_score >= 0.8 * question.points %}Easy
+                                    {% elif avg_score >= 0.6 * question.points %}Medium
+                                    {% elif avg_score >= 0.4 * question.points %}Challenging
+                                    {% else %}Difficult{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <span>Created:</span>
+                                <span class="fw-bold">{{ question.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if question.question_type.value == 'multiple_choice' and answer_distribution %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h2 class="h5 mb-0"><i class="fas fa-chart-pie me-2"></i>Answer Distribution</h2>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="answerDistributionChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    {% if total_answers > 0 %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h2 class="h5 mb-0"><i class="fas fa-list me-2"></i>Student Answers</h2>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Answer</th>
+                                <th>Score</th>
+                                <th>Feedback</th>
+                                <th>Exam</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for answer in answers %}
+                                <tr>
+                                    <td>{{ answer.student_exam.student.username }}</td>
+                                    <td>
+                                        {% if answer.answer_text|length > 50 %}
+                                            {{ answer.answer_text[:50] }}...
+                                        {% else %}
+                                            {{ answer.answer_text }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if answer.score == question.points %}bg-success
+                                            {% elif answer.score > 0 %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ "%.1f"|format(answer.score) }} / {{ question.points }}
+                                        </span>
+                                    </td>
+                                    <td>{{ answer.feedback }}</td>
+                                    <td>{{ answer.student_exam.exam.title }}</td>
+                                    <td>{{ answer.answered_at.strftime('%b %d, %Y') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card shadow">
+            <div class="card-body text-center p-5">
+                <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                <h3>No Data Available</h3>
+                <p class="text-muted">This question hasn't been answered by any students yet.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% if question.question_type.value == 'multiple_choice' and answer_distribution %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Answer distribution chart for multiple choice questions
+        const distributionCtx = document.getElementById('answerDistributionChart').getContext('2d');
+        
+        const labels = [];
+        const data = [];
+        const backgroundColor = [];
+        
+        {% for option, count in answer_distribution.items() %}
+            labels.push("{{ option }}");
+            data.push({{ count }});
+            
+            {% if option == question.correct_answer %}
+                backgroundColor.push('#198754'); // Green for correct answer
+            {% else %}
+                backgroundColor.push('#0d6efd');
+            {% endif %}
+        {% endfor %}
+        
+        const distributionChart = new Chart(distributionCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of Responses',
+                    data: data,
+                    backgroundColor: backgroundColor
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Student Answer Choices'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Students'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Answer Options'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

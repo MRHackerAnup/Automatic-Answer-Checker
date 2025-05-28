@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Take Exam - {{ exam.title }} - Automatic Answer Checker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h4 mb-0"><i class="fas fa-pen me-2"></i>{{ exam.title }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="mb-4">
+                {% if exam.description %}
+                    <p>{{ exam.description }}</p>
+                {% endif %}
+                <div class="alert alert-info">
+                    <i class="fas fa-clock me-1"></i> Time Limit: {{ exam.time_limit }} minutes
+                    <div id="timer" class="fw-bold mt-1"></div>
+                </div>
+            </div>
+            
+            <form method="POST" id="examForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="mb-4">
+                    <h3 class="h5 mb-3">Questions:</h3>
+                    
+                    {% for question in questions %}
+                        <div class="card mb-3 border-primary">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">Question {{ loop.index }}:</span>
+                                    <span class="badge bg-primary">{{ question.points }} points</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p>{{ question.question_text }}</p>
+                                
+                                {% if question.question_type.value == 'multiple_choice' and question.options %}
+                                    <div class="mb-3">
+                                        {% set options_list = question.options|tojson|fromjson %}
+                                        {% if options_list is string %}
+                                            {% set options_list = options_list|fromjson %}
+                                        {% endif %}
+                                        {% for option in options_list %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="answer_{{ question.id }}" id="option_{{ question.id }}_{{ loop.index }}" value="{{ option }}" required>
+                                                <label class="form-check-label" for="option_{{ question.id }}_{{ loop.index }}">
+                                                    {{ option }}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="mb-3">
+                                        <label for="answer_{{ question.id }}" class="form-label">Your Answer:</label>
+                                        <textarea class="form-control" id="answer_{{ question.id }}" name="answer_{{ question.id }}" rows="3" required></textarea>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-paper-plane me-1"></i> Submit Exam
+                    </button>
+                    <a href="{{ url_for('dashboard_student') }}" class="btn btn-outline-secondary" id="cancelBtn">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Timer functionality
+        const startTime = new Date().getTime();
+        const timeLimit = {{ exam.time_limit }} * 60 * 1000; // Convert to milliseconds
+        const timerElement = document.getElementById('timer');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const examForm = document.getElementById('examForm');
+        
+        function updateTimer() {
+            const currentTime = new Date().getTime();
+            const elapsedTime = currentTime - startTime;
+            const remainingTime = timeLimit - elapsedTime;
+            
+            if (remainingTime <= 0) {
+                // Time's up, submit the exam
+                clearInterval(timerInterval);
+                timerElement.innerHTML = '<span class="text-danger">Time\'s up! Submitting...</span>';
+                submitExam();
+                return;
+            }
+            
+            const minutes = Math.floor(remainingTime / (60 * 1000));
+            const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
+            
+            // Format the timer display
+            timerElement.innerHTML = `Time Remaining: <span class="${minutes < 5 ? 'text-danger' : ''}">${minutes}:${seconds < 10 ? '0' : ''}${seconds}</span>`;
+        }
+        
+        // Initialize timer
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+        
+        // Handle exam submission
+        function submitExam() {
+            // Disable buttons to prevent multiple submissions
+            submitBtn.disabled = true;
+            cancelBtn.disabled = true;
+            
+            // Submit the form
+            examForm.submit();
+        }
+        
+        // Submit button event listener
+        examForm.addEventListener('submit', function(e) {
+            submitBtn.disabled = true;
+            cancelBtn.disabled = true;
+        });
+        
+        // Warn user before leaving the page
+        window.addEventListener('beforeunload', function(e) {
+            // Cancel the event
+            e.preventDefault();
+            // Chrome requires returnValue to be set
+            e.returnValue = 'You are in the middle of an exam. If you leave now, your progress will be lost.';
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Create Exam - Automatic Answer Checker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0"><i class="fas fa-clipboard-list me-2"></i>Create New Exam</h2>
+                </div>
+                <div class="card-body">
+                    {% if form.questions.choices %}
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                {{ form.title.label(class="form-label") }}
+                                {% if form.title.errors %}
+                                    {{ form.title(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.title.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.title(class="form-control") }}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", rows=3) }}
+                                <div class="form-text">Provide instructions or information about this exam for students.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.time_limit.label(class="form-label") }}
+                                {% if form.time_limit.errors %}
+                                    {{ form.time_limit(class="form-control is-invalid", type="number", min=5) }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.time_limit.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.time_limit(class="form-control", type="number", min=5) }}
+                                {% endif %}
+                                <div class="form-text">Maximum time in minutes that students have to complete the exam.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.questions.label(class="form-label") }}
+                                {% if form.questions.errors %}
+                                    {{ form.questions(class="form-select is-invalid", size=10, multiple=true) }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.questions.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.questions(class="form-select", size=10, multiple=true) }}
+                                {% endif %}
+                                <div class="form-text">
+                                    Hold Ctrl (or Cmd on Mac) to select multiple questions. The order of selection will determine the order in the exam.
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                {{ form.submit(class="btn btn-primary") }}
+                                <a href="{{ url_for('dashboard_teacher') }}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="fas fa-exclamation-circle fa-3x text-warning mb-3"></i>
+                            <h4>No Questions Available</h4>
+                            <p class="text-muted">You need to create some questions first before you can create an exam.</p>
+                            <a href="{{ url_for('create_question') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus me-1"></i> Create Questions
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

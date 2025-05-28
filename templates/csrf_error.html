@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}CSRF Error{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="h4 mb-0"><i class="fas fa-exclamation-triangle me-2"></i>CSRF Token Error</h2>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-shield-alt fa-4x text-danger mb-3"></i>
+                        <h3>Security Error</h3>
+                        <p class="lead">A Cross-Site Request Forgery (CSRF) token error occurred.</p>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <p><strong>Error details:</strong> {{ reason }}</p>
+                        <p>This could happen if:</p>
+                        <ul>
+                            <li>Your form submission was invalid</li>
+                            <li>Your session has expired</li>
+                            <li>You're attempting to submit a form from an unauthorized source</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-home me-1"></i> Go to Homepage
+                        </a>
+                        <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

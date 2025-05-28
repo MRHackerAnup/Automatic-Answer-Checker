@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - Automatic Answer Checker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-6"><i class="fas fa-tachometer-alt me-2"></i>Teacher Dashboard</h1>
+            <p class="text-muted">Welcome, {{ current_user.username }}! Manage your questions and exams from here.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('create_question') }}" class="btn btn-success me-2">
+                <i class="fas fa-plus me-1"></i> Create Question
+            </a>
+            <a href="{{ url_for('create_exam') }}" class="btn btn-primary">
+                <i class="fas fa-clipboard-list me-1"></i> Create Exam
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Questions</h6>
+                            <h2 class="display-6 fw-bold mb-0">{{ questions_count }}</h2>
+                        </div>
+                        <i class="fas fa-question-circle fa-3x text-white-50"></i>
+                    </div>
+                    <a href="{{ url_for('manage_questions') }}" class="btn btn-sm btn-outline-light mt-3">Manage Questions</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Exams</h6>
+                            <h2 class="display-6 fw-bold mb-0">{{ exams|length }}</h2>
+                        </div>
+                        <i class="fas fa-clipboard-check fa-3x text-white-50"></i>
+                    </div>
+                    <a href="#exam-list" class="btn btn-sm btn-outline-light mt-3">View Exams</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Students</h6>
+                            <h2 class="display-6 fw-bold mb-0">{{ student_count }}</h2>
+                        </div>
+                        <i class="fas fa-user-graduate fa-3x text-white-50"></i>
+                    </div>
+                    <button class="btn btn-sm btn-outline-light mt-3" disabled>Student Analytics</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exams List -->
+    <div class="card shadow mb-4" id="exam-list">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0"><i class="fas fa-clipboard-list me-2"></i>Your Exams</h2>
+        </div>
+        <div class="card-body p-0">
+            {% if exams %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Created</th>
+                                <th>Questions</th>
+                                <th>Time Limit</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exam in exams %}
+                            <tr>
+                                <td>{{ exam.title }}</td>
+                                <td>{{ exam.created_at.strftime('%b %d, %Y') }}</td>
+                                <td>{{ exam.exam_questions|length }}</td>
+                                <td>{{ exam.time_limit }} min</td>
+                                <td>
+                                    {% if exam.is_active %}
+                                        <span class="badge text-bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge text-bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('view_exam', exam_id=exam.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                        <form action="{{ url_for('toggle_exam', exam_id=exam.id) }}" method="post" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-{% if exam.is_active %}warning{% else %}success{% endif %}">
+                                                {% if exam.is_active %}Deactivate{% else %}Activate{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-4 text-center">
+                    <p class="text-muted">You haven't created any exams yet.</p>
+                    <a href="{{ url_for('create_exam') }}" class="btn btn-primary">Create your first exam</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Analytics Section - Placeholder for now -->
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h2 class="h5 mb-0"><i class="fas fa-chart-line me-2"></i>Analytics Overview</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <canvas id="questionTypeChart" height="200"></canvas>
+                </div>
+                <div class="col-md-6">
+                    <canvas id="studentScoreChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Sample charts - would be populated with real data in production
+    const questionTypeCtx = document.getElementById('questionTypeChart').getContext('2d');
+    const questionTypeChart = new Chart(questionTypeCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Multiple Choice', 'Short Answer'],
+            datasets: [{
+                data: [65, 35],
+                backgroundColor: ['#0d6efd', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                title: {
+                    display: true,
+                    text: 'Question Types Distribution'
+                }
+            }
+        }
+    });
+    
+    const studentScoreCtx = document.getElementById('studentScoreChart').getContext('2d');
+    const studentScoreChart = new Chart(studentScoreCtx, {
+        type: 'bar',
+        data: {
+            labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+            datasets: [{
+                label: 'Student Score Distribution',
+                data: [5, 10, 15, 25, 45],
+                backgroundColor: '#20c997'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Student Score Distribution'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Students'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Score Range'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

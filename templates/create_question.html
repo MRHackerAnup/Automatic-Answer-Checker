@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Create Question - Automatic Answer Checker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0">
+                        {% if edit_mode %}
+                            <i class="fas fa-edit me-2"></i>Edit Question
+                        {% else %}
+                            <i class="fas fa-plus me-2"></i>Create New Question
+                        {% endif %}
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.question_text.label(class="form-label") }}
+                            {% if form.question_text.errors %}
+                                {{ form.question_text(class="form-control is-invalid", rows=3) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.question_text.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.question_text(class="form-control", rows=3) }}
+                            {% endif %}
+                            <div class="form-text">Enter the full text of your question here.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.question_type.label(class="form-label") }}
+                            {{ form.question_type(class="form-select", id="questionType") }}
+                            <div class="form-text">Select the type of question you want to create.</div>
+                        </div>
+                        
+                        <div id="multipleChoiceOptions" class="mb-3">
+                            <label class="form-label">Multiple Choice Options</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    {{ form.option1(class="form-control", placeholder="Option 1") }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.option2(class="form-control", placeholder="Option 2") }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.option3(class="form-control", placeholder="Option 3") }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.option4(class="form-control", placeholder="Option 4") }}
+                                </div>
+                            </div>
+                            <div class="form-text">For multiple choice questions, provide the possible answer options.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.correct_answer.label(class="form-label") }}
+                            {% if form.correct_answer.errors %}
+                                {{ form.correct_answer(class="form-control is-invalid", rows=2) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.correct_answer.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.correct_answer(class="form-control", rows=2) }}
+                            {% endif %}
+                            <div class="form-text" id="correct-answer-help">
+                                For multiple choice questions, enter the exact text of the correct option.
+                                For short answer questions, enter the expected answer.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.points.label(class="form-label") }}
+                            {% if form.points.errors %}
+                                {{ form.points(class="form-control is-invalid", type="number", min=1) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.points.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.points(class="form-control", type="number", min=1) }}
+                            {% endif %}
+                            <div class="form-text">Points awarded for a correct answer.</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('manage_questions') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Show/hide multiple choice options based on question type
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionType = document.getElementById('questionType');
+        const multipleChoiceOptions = document.getElementById('multipleChoiceOptions');
+        const correctAnswerHelp = document.getElementById('correct-answer-help');
+        
+        function updateVisibility() {
+            if (questionType.value === 'multiple_choice') {
+                multipleChoiceOptions.style.display = 'block';
+                correctAnswerHelp.textContent = 'For multiple choice questions, enter the exact text of the correct option.';
+            } else {
+                multipleChoiceOptions.style.display = 'none';
+                correctAnswerHelp.textContent = 'For short answer questions, enter the expected answer.';
+            }
+        }
+        
+        // Initial visibility
+        updateVisibility();
+        
+        // Update when selection changes
+        questionType.addEventListener('change', updateVisibility);
+    });
+</script>
+{% endblock %}

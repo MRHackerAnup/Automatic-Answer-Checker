@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}View Exam - {{ exam.title }} - Automatic Answer Checker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-6"><i class="fas fa-clipboard-list me-2"></i>{{ exam.title }}</h1>
+            <p class="text-muted">
+                Created on {{ exam.created_at.strftime('%b %d, %Y') }} | 
+                Time Limit: {{ exam.time_limit }} minutes |
+                Status: 
+                <span class="badge {{ 'bg-success' if exam.is_active else 'bg-danger' }}">
+                    {{ 'Active' if exam.is_active else 'Inactive' }}
+                </span>
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <form action="{{ url_for('toggle_exam', exam_id=exam.id) }}" method="post" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-{{ 'warning' if exam.is_active else 'success' }} me-2">
+                    <i class="fas fa-{{ 'power-off' if exam.is_active else 'play' }} me-1"></i>
+                    {{ 'Deactivate' if exam.is_active else 'Activate' }} Exam
+                </button>
+            </form>
+            <a href="{{ url_for('dashboard_teacher') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h5 mb-0"><i class="fas fa-question-circle me-2"></i>Exam Questions</h2>
+                </div>
+                <div class="card-body p-0">
+                    <div class="accordion" id="questionAccordion">
+                        {% for question in questions %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading{{ question.id }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#collapse{{ question.id }}" aria-expanded="false" 
+                                            aria-controls="collapse{{ question.id }}">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <div class="me-auto">
+                                                <span class="badge rounded-pill 
+                                                    {% if question.question_type.value == 'multiple_choice' %}bg-primary
+                                                    {% else %}bg-info{% endif %} me-2">
+                                                    {{ question.question_type.value|replace('_', ' ')|title }}
+                                                </span>
+                                                Q{{ loop.index }}: {{ question.question_text|truncate(50) }}
+                                            </div>
+                                            <span class="badge bg-secondary ms-2">{{ question.points }} pts</span>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ question.id }}" class="accordion-collapse collapse" 
+                                     aria-labelledby="heading{{ question.id }}" data-bs-parent="#questionAccordion">
+                                    <div class="accordion-body">
+                                        <p><strong>Question:</strong> {{ question.question_text }}</p>
+                                        
+                                        {% if question.question_type.value == 'multiple_choice' and question.options %}
+                                            <div class="mb-3">
+                                                <strong>Options:</strong>
+                                                <ul class="list-group">
+                                                    {% set options_list = question.options|tojson|fromjson %}
+                                                    {% if options_list is string %}
+                                                        {% set options_list = options_list|fromjson %}
+                                                    {% endif %}
+                                                    {% for option in options_list %}
+                                                        <li class="list-group-item {% if option == question.correct_answer %}list-group-item-success{% endif %}">
+                                                            {{ option }}
+                                                            {% if option == question.correct_answer %}
+                                                                <span class="badge bg-success float-end">Correct</span>
+                                                            {% endif %}
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% else %}
+                                            <div class="mb-3">
+                                                <strong>Correct Answer:</strong>
+                                                <p>{{ question.correct_answer }}</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <a href="{{ url_for('question_analytics', question_id=question.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-chart-bar me-1"></i> View Question Analytics
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Total Questions: <strong>{{ questions|length }}</strong></span>
+                        <span>Total Points: <strong>{{ questions|sum(attribute='points') }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-info text-white">
+                    <h2 class="h5 mb-0"><i class="fas fa-chart-pie me-2"></i>Exam Statistics</h2>
+                </div>
+                <div class="card-body">
+                    {% if student_exams %}
+                        <div class="mb-4">
+                            <h3 class="h6 text-muted">OVERVIEW</h3>
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <span>Students Taken:</span>
+                                <span class="fw-bold">{{ student_exams|length }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <span>Average Score:</span>
+                                {% set avg_score = student_exams|map(attribute='score')|sum / student_exams|length %}
+                                <span class="fw-bold 
+                                    {% if avg_score >= 80 %}text-success
+                                    {% elif avg_score >= 60 %}text-info
+                                    {% elif avg_score >= 40 %}text-warning
+                                    {% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(avg_score) }}%
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2">
+                                <span>Highest Score:</span>
+                                {% set max_score = student_exams|map(attribute='score')|max %}
+                                <span class="fw-bold text-success">{{ "%.1f"|format(max_score) }}%</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="h6 text-muted">SCORE DISTRIBUTION</h3>
+                            <canvas id="scoreDistributionChart" height="200"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h4>No Students Yet</h4>
+                            <p class="text-muted">No students have taken this exam yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if student_exams %}
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h2 class="h5 mb-0"><i class="fas fa-user-graduate me-2"></i>Student Submissions</h2>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Date Taken</th>
+                                <th>Time Spent</th>
+                                <th>Score</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student_exam in student_exams|sort(attribute='end_time', reverse=true) %}
+                                <tr>
+                                    <td>{{ student_exam.student.username }}</td>
+                                    <td>{{ student_exam.end_time.strftime('%b %d, %Y, %H:%M') }}</td>
+                                    <td>{{ (student_exam.end_time - student_exam.start_time).total_seconds() // 60 }} min</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar
+                                                {% if student_exam.score >= 80 %}bg-success
+                                                {% elif student_exam.score >= 60 %}bg-info
+                                                {% elif student_exam.score >= 40 %}bg-warning
+                                                {% else %}bg-danger
+                                                {% endif %}"
+                                                role="progressbar"
+                                                style="width: {{ student_exam.score }}%;"
+                                                aria-valuenow="{{ student_exam.score }}"
+                                                aria-valuemin="0"
+                                                aria-valuemax="100">
+                                                {{ "%.1f"|format(student_exam.score) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('view_results', student_exam_id=student_exam.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i> View Results
+                                            </a>
+                                            <a href="{{ url_for('student_analytics', student_id=student_exam.student_id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-chart-line me-1"></i> Student Analytics
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% if student_exams %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Score distribution chart
+        const scoreDistCtx = document.getElementById('scoreDistributionChart').getContext('2d');
+        
+        // Calculate score distribution
+        const scoreBrackets = {
+            '0-20%': 0,
+            '21-40%': 0,
+            '41-60%': 0,
+            '61-80%': 0,
+            '81-100%': 0
+        };
+        
+        {% for student_exam in student_exams %}
+            const score = {{ student_exam.score }};
+            if (score <= 20) {
+                scoreBrackets['0-20%']++;
+            } else if (score <= 40) {
+                scoreBrackets['21-40%']++;
+            } else if (score <= 60) {
+                scoreBrackets['41-60%']++;
+            } else if (score <= 80) {
+                scoreBrackets['61-80%']++;
+            } else {
+                scoreBrackets['81-100%']++;
+            }
+        {% endfor %}
+        
+        const scoreDistChart = new Chart(scoreDistCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(scoreBrackets),
+                datasets: [{
+                    data: Object.values(scoreBrackets),
+                    backgroundColor: [
+                        '#dc3545', // red
+                        '#fd7e14', // orange
+                        '#ffc107', // yellow
+                        '#20c997', // teal
+                        '#198754'  // green
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

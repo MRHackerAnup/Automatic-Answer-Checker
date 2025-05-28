@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - Automatic Answer Checker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="display-6"><i class="fas fa-tachometer-alt me-2"></i>Student Dashboard</h1>
+            <p class="text-muted">Welcome, {{ current_user.username }}! Take exams and view your results from here.</p>
+        </div>
+    </div>
+    
+    <!-- Stats Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Available Exams</h6>
+                            <h2 class="display-6 fw-bold mb-0">{{ available_exams|length }}</h2>
+                        </div>
+                        <i class="fas fa-clipboard-list fa-3x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Completed Exams</h6>
+                            <h2 class="display-6 fw-bold mb-0">{{ completed_exams|length }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Average Score</h6>
+                            {% if completed_exams %}
+                                {% set avg_score = completed_exams|map(attribute='score')|sum / completed_exams|length %}
+                                <h2 class="display-6 fw-bold mb-0">{{ "%.1f"|format(avg_score) }}%</h2>
+                            {% else %}
+                                <h2 class="display-6 fw-bold mb-0">N/A</h2>
+                            {% endif %}
+                        </div>
+                        <i class="fas fa-star fa-3x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Available Exams -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0"><i class="fas fa-clipboard-list me-2"></i>Available Exams</h2>
+        </div>
+        <div class="card-body p-0">
+            {% if available_exams %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Created By</th>
+                                <th>Questions</th>
+                                <th>Time Limit</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exam in available_exams %}
+                            <tr>
+                                <td>{{ exam.title }}</td>
+                                <td>{{ exam.teacher.username }}</td>
+                                <td>{{ exam.exam_questions|length }}</td>
+                                <td>{{ exam.time_limit }} min</td>
+                                <td>
+                                    <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-pen me-1"></i> Take Exam
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-4 text-center">
+                    <p class="text-muted">No exams are currently available.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Completed Exams -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+            <h2 class="h5 mb-0"><i class="fas fa-check-circle me-2"></i>Completed Exams</h2>
+        </div>
+        <div class="card-body p-0">
+            {% if completed_exams %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Date Taken</th>
+                                <th>Score</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student_exam in completed_exams %}
+                            <tr>
+                                <td>{{ student_exam.exam.title }}</td>
+                                <td>{{ student_exam.end_time.strftime('%b %d, %Y, %H:%M') }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar
+                                            {% if student_exam.score >= 80 %}bg-success
+                                            {% elif student_exam.score >= 60 %}bg-info
+                                            {% elif student_exam.score >= 40 %}bg-warning
+                                            {% else %}bg-danger
+                                            {% endif %}"
+                                            role="progressbar"
+                                            style="width: {{ student_exam.score }}%;"
+                                            aria-valuenow="{{ student_exam.score }}"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{ "%.1f"|format(student_exam.score) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_results', student_exam_id=student_exam.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i> View Results
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-4 text-center">
+                    <p class="text-muted">You haven't completed any exams yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Performance Chart -->
+    {% if completed_exams %}
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h2 class="h5 mb-0"><i class="fas fa-chart-line me-2"></i>Your Performance</h2>
+        </div>
+        <div class="card-body">
+            <canvas id="performanceChart" height="200"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    {% if completed_exams %}
+    // Performance chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(performanceCtx, {
+        type: 'line',
+        data: {
+            labels: [
+                {% for student_exam in completed_exams %}
+                    "{{ student_exam.exam.title|truncate(15, True) }}",
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Your Score',
+                data: [
+                    {% for student_exam in completed_exams %}
+                        {{ student_exam.score }},
+                    {% endfor %}
+                ],
+                borderColor: '#0dcaf0',
+                backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Your Exam Scores Over Time'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Score (%)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Exams'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

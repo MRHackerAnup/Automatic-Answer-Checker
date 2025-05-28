@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Automatic Answer Checker - Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold"><i class="fas fa-check-circle text-success me-3"></i>Automatic Answer Checker</h1>
+                <p class="lead">An advanced system for evaluating student responses efficiently and accurately.</p>
+            </div>
+            
+            <div class="row mb-5">
+                <div class="col-md-6">
+                    <div class="card mb-4 h-100">
+                        <div class="card-body">
+                            <h2 class="card-title"><i class="fas fa-chalkboard-teacher text-primary me-2"></i>For Teachers</h2>
+                            <p class="card-text">Create and manage questions, set up exams, and get analytics on student performance.</p>
+                            <ul class="list-group list-group-flush mb-4">
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Create multiple-choice and short-answer questions</li>
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Organize questions into exams</li>
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Automatic grading with customizable scoring</li>
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>View detailed analytics on student performance</li>
+                            </ul>
+                            {% if current_user.is_authenticated and current_user.role.value == 'teacher' %}
+                                <a href="{{ url_for('dashboard_teacher') }}" class="btn btn-primary">Go to Dashboard</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-outline-primary">Register as a Teacher</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card mb-4 h-100">
+                        <div class="card-body">
+                            <h2 class="card-title"><i class="fas fa-user-graduate text-info me-2"></i>For Students</h2>
+                            <p class="card-text">Take exams, get instant feedback, and track your progress over time.</p>
+                            <ul class="list-group list-group-flush mb-4">
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Easy-to-use exam interface</li>
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Instant feedback on your answers</li>
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Track your performance across different exams</li>
+                                <li class="list-group-item bg-transparent"><i class="fas fa-check text-success me-2"></i>Review past exams and learn from mistakes</li>
+                            </ul>
+                            {% if current_user.is_authenticated and current_user.role.value == 'student' %}
+                                <a href="{{ url_for('dashboard_student') }}" class="btn btn-info">Go to Dashboard</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-outline-info">Register as a Student</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2 class="text-center mb-4"><i class="fas fa-star text-warning me-2"></i>Key Features</h2>
+                            <div class="row">
+                                <div class="col-md-4 text-center mb-4">
+                                    <div class="feature-icon mb-3">
+                                        <i class="fas fa-bolt text-warning fa-3x"></i>
+                                    </div>
+                                    <h4>Efficiency</h4>
+                                    <p>Grade answers quickly, significantly reducing evaluation time.</p>
+                                </div>
+                                <div class="col-md-4 text-center mb-4">
+                                    <div class="feature-icon mb-3">
+                                        <i class="fas fa-balance-scale text-primary fa-3x"></i>
+                                    </div>
+                                    <h4>Consistency</h4>
+                                    <p>Ensure consistent and unbiased grading across all submissions.</p>
+                                </div>
+                                <div class="col-md-4 text-center mb-4">
+                                    <div class="feature-icon mb-3">
+                                        <i class="fas fa-expand-arrows-alt text-success fa-3x"></i>
+                                    </div>
+                                    <h4>Scalability</h4>
+                                    <p>Handle large volumes of student responses simultaneously.</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 text-center mb-4">
+                                    <div class="feature-icon mb-3">
+                                        <i class="fas fa-bullseye text-danger fa-3x"></i>
+                                    </div>
+                                    <h4>Accuracy</h4>
+                                    <p>Advanced algorithms ensure precise grading of responses.</p>
+                                </div>
+                                <div class="col-md-4 text-center mb-4">
+                                    <div class="feature-icon mb-3">
+                                        <i class="fas fa-comments text-info fa-3x"></i>
+                                    </div>
+                                    <h4>Instant Feedback</h4>
+                                    <p>Students receive immediate feedback on their performance.</p>
+                                </div>
+                                <div class="col-md-4 text-center mb-4">
+                                    <div class="feature-icon mb-3">
+                                        <i class="fas fa-chart-line text-primary fa-3x"></i>
+                                    </div>
+                                    <h4>Analytics</h4>
+                                    <p>Get insights into student performance and identify areas for improvement.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not current_user.is_authenticated %}
+            <div class="text-center mt-5">
+                <h3>Ready to get started?</h3>
+                <div class="mt-3">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-success">Register</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

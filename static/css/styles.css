@@ -1,0 +1,111 @@
+/* 
+ * Custom Styles for Automatic Answer Checker
+ * Built on top of Bootstrap with minimal overrides
+ */
+
+/* General Styling */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-header {
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 0.5rem !important;
+}
+
+.card.shadow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Feature Icon Styling */
+.feature-icon {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+}
+
+/* Form Styling */
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 0.25rem;
+}
+
+/* Custom animation for alerts */
+.alert {
+    animation: fadeInDown 0.5s;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Exam progress bar styling */
+.progress {
+    height: 1.25rem;
+    border-radius: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+/* Question analytics styling */
+.analytics-card {
+    transition: all 0.3s;
+}
+
+.analytics-card:hover {
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+}
+
+/* Custom accordion styling */
+.accordion-button:not(.collapsed) {
+    color: var(--bs-light);
+    background-color: var(--bs-primary);
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Table hover effect */
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+/* Timer styling for exams */
+#timer {
+    font-family: monospace;
+    font-size: 1.2rem;
+}
+
+/* Dashboard stats cards hover effect */
+.text-bg-primary:hover, .text-bg-success:hover, .text-bg-info:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}

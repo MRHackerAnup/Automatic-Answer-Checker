@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Question Generator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-robot me-2 text-primary"></i>AI Question Generator
+            </h1>
+            <p class="text-muted">Let AI help you generate new questions based on a topic</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('manage_questions') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Questions
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h5 mb-0"><i class="fas fa-lightbulb me-2"></i>Generate Questions</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="generatorForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="topic" class="form-label">Topic</label>
+                            <input type="text" class="form-control" id="topic" name="topic" 
+                                placeholder="e.g., Python Programming, World History, Literary Analysis" required>
+                            <div class="form-text">Enter the subject or topic you want questions about</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Question Type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="question_type" id="multipleChoice" 
+                                       value="multiple_choice" checked>
+                                <label class="form-check-label" for="multipleChoice">
+                                    Multiple Choice
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="question_type" id="shortAnswer" 
+                                       value="short_answer">
+                                <label class="form-check-label" for="shortAnswer">
+                                    Short Answer
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="count" class="form-label">Number of Questions</label>
+                            <select class="form-select" id="count" name="count">
+                                <option value="1">1 Question</option>
+                                <option value="3" selected>3 Questions</option>
+                                <option value="5">5 Questions</option>
+                                <option value="10">10 Questions</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="generateBtn">
+                                <i class="fas fa-magic me-1"></i> Generate Questions
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-info text-white">
+                    <h2 class="h5 mb-0"><i class="fas fa-info-circle me-2"></i>About AI Generation</h2>
+                </div>
+                <div class="card-body">
+                    <p>This feature uses advanced AI to create education-focused questions based on your input topic. Benefits include:</p>
+                    <ul>
+                        <li>Save time on question creation</li>
+                        <li>Get inspiration for different question styles</li>
+                        <li>Ensure varied difficulty levels and good distractors</li>
+                        <li>Focus on pedagogical value</li>
+                    </ul>
+                    <p class="mb-0 small text-muted">Always review AI-generated questions for accuracy and appropriateness before using them in exams.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h2 class="h5 mb-0"><i class="fas fa-list me-2"></i>Generated Questions</h2>
+                </div>
+                <div class="card-body p-0">
+                    {% if generated_questions %}
+                        <div class="accordion" id="questionAccordion">
+                            {% for question in generated_questions %}
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                                data-bs-target="#collapse{{ loop.index }}" aria-expanded="true" 
+                                                aria-controls="collapse{{ loop.index }}">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <span>
+                                                    <span class="badge rounded-pill me-2 {% if question.type == 'multiple_choice' %}bg-primary{% else %}bg-info{% endif %}">
+                                                        {{ question.type|replace('_', ' ')|title }}
+                                                    </span>
+                                                    {{ question.question_text|truncate(50) }}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" 
+                                         aria-labelledby="heading{{ loop.index }}" data-bs-parent="#questionAccordion">
+                                        <div class="accordion-body">
+                                            <form action="{{ url_for('save_ai_question') }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <input type="hidden" name="question_text" value="{{ question.question_text }}">
+                                                <input type="hidden" name="question_type" value="{{ question.type }}">
+                                                <input type="hidden" name="correct_answer" value="{{ question.correct_answer }}">
+                                                
+                                                {% if question.type == 'multiple_choice' %}
+                                                    {% for option in question.options %}
+                                                        <input type="hidden" name="option{{ loop.index }}" value="{{ option }}">
+                                                    {% endfor %}
+                                                {% endif %}
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Question:</label>
+                                                    <p>{{ question.question_text }}</p>
+                                                </div>
+                                                
+                                                {% if question.type == 'multiple_choice' %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">Options:</label>
+                                                        <ul class="list-group">
+                                                            {% for option in question.options %}
+                                                                <li class="list-group-item {% if option == question.correct_answer %}list-group-item-success{% endif %}">
+                                                                    {{ option }}
+                                                                    {% if option == question.correct_answer %}
+                                                                        <span class="badge bg-success float-end">Correct</span>
+                                                                    {% endif %}
+                                                                </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">Model Answer:</label>
+                                                        <p>{{ question.correct_answer }}</p>
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                <div class="d-flex justify-content-end">
+                                                    <button type="submit" class="btn btn-success">
+                                                        <i class="fas fa-save me-1"></i> Save to My Questions
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center p-5">
+                            <i class="fas fa-wand-magic-sparkles fa-4x text-muted mb-3"></i>
+                            <h4>No Questions Generated Yet</h4>
+                            <p class="text-muted">Fill out the form to generate AI-powered questions for your exams.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('generatorForm');
+        const generateBtn = document.getElementById('generateBtn');
+        
+        form.addEventListener('submit', function() {
+            generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generating...';
+            generateBtn.disabled = true;
+        });
+    });
+</script>
+{% endblock %}
